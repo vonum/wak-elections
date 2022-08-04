@@ -90,6 +90,15 @@ contract Voting is Ownable {
         return topCandidates;
     }
 
+    function candidateVotes() external view returns (uint256[10] memory) {
+        uint256[10] memory _votes;
+        for (uint256 i = 1; i < 11; i++) {
+            _votes[i-1] = votes[i];
+        }
+
+        return _votes;
+    }
+
     function _updateTopCandidates(uint8 candidate, uint256 _votes) private {
         uint8[3] memory _topCandidates = topCandidates;
 

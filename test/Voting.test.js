@@ -131,4 +131,40 @@ describe("VotingContract", () => {
       );
     });
   });
+
+  describe("Candidate votes", () => {
+    it("Returns the correct values", async () => {
+      await this.votingContract.contract.methods
+        .setVotingStatus(true)
+        .send({from: owner, gas: 500000});
+
+      await this.votingContract.contract.methods
+        .register()
+        .send({from: owner, gas: 500000});
+
+      await this.wkndContract.contract.methods
+        .approve(this.votingContract.address, 1)
+        .send({from: owner, gas: 500000});
+
+      await this.votingContract.contract.methods
+        .register()
+        .send({from: user, gas: 500000});
+
+      await this.wkndContract.contract.methods
+        .approve(this.votingContract.address, 1)
+        .send({from: user, gas: 500000});
+
+      await this.votingContract.contract.methods
+        .vote(3, 1)
+        .send({from: owner, gas: 500000});
+
+      await this.votingContract.contract.methods
+        .vote(7, 1)
+        .send({from: user, gas: 500000});
+
+      const candidateVotes = await this.votingContract.candidateVotes();
+      const votes = candidateVotes.map(v => v.toNumber());
+      expect(votes).to.eql([0, 0, 1, 0, 0, 0, 1, 0, 0, 0]);
+    });
+  });
 });
