@@ -18,6 +18,7 @@ contract Voting is Ownable {
 
     IERC20 public wknd;
 
+    event CandidatesSet(string[10] candidates);
     event NewChallanger(uint8 candidate);
     event VoterRegistered(address voter);
     event Voted(address voter, uint8 candidate, uint256 value);
@@ -53,6 +54,8 @@ contract Voting is Ownable {
         require(value > 0, "0 WKND tokens provided");
         require(!voted[msg.sender], "Already voted");
 
+        bool wasTopCandidate = _isTopCondidate(candidate);
+
         wknd.transferFrom(msg.sender, address(this), value);
 
         votes[candidate] += value;
@@ -60,8 +63,8 @@ contract Voting is Ownable {
 
         emit Voted(msg.sender, candidate, value);
 
-        bool wasTopCandidate = _isTopCondidate(candidate);
         _updateTopCandidates(candidate, votes[candidate]);
+
         bool isTopCondidate = _isTopCondidate(candidate);
 
         if (!wasTopCandidate && isTopCondidate) {
@@ -78,6 +81,59 @@ contract Voting is Ownable {
     function _updateTopCandidates(uint8 candidate, uint256 _votes) private {
         uint8[3] memory _topCandidates = topCandidates;
 
+        /*
+        if ((_votes == votes[_topCandidates[2]] && candidate == _topCandidates[2])
+            || (_votes == votes[_topCandidates[1]] && candidate == _topCandidates[1])
+            || (_votes == votes[_topCandidates[0]] && candidate == _topCandidates[0])) {
+            return;
+        }
+        */
+
+        if (_votes > votes[_topCandidates[0]]) {
+            // already 1st -> no change
+            if (candidate == _topCandidates[0]) {
+                return;
+            // 2nd -> swap 1st and 2nd
+            } else if (candidate == _topCandidates[1]) {
+                (_topCandidates[1], _topCandidates[0])
+                    = (_topCandidates[0], candidate);
+            // 3rd or bellow -> push him to 1st, and move the rest down one place
+            } else {
+                (_topCandidates[2], _topCandidates[1], _topCandidates[0])
+                    = (_topCandidates[1], _topCandidates[0], candidate);
+            }
+        } else if (_votes > votes[_topCandidates[1]]) {
+            if (candidate == _topCandidates[0]) {
+                return;
+            }
+            // already 2nd -> no change
+            else if (candidate == _topCandidates[1]) {
+                return;
+            // 3rd or bellow -> push him to 2nd, and make 2nd place 3rd
+            } else {
+                (_topCandidates[2], _topCandidates[1])
+                    = (_topCandidates[1], candidate);
+            }
+        } else if (_votes > votes[_topCandidates[2]]) {
+            if (candidate == _topCandidates[0]) {
+                return;
+            }
+            else if (candidate == _topCandidates[1]) {
+                return;
+            }
+            if (candidate == _topCandidates[2]) {
+                return;
+            } else {
+                _topCandidates[2] = candidate;
+            }
+        }
+
+        topCandidates = _topCandidates;
+    }
+
+    function _updateTopCandidates2(uint8 candidate, uint256 _votes) private {
+        uint8[3] memory _topCandidates = topCandidates;
+
         if (_votes > votes[_topCandidates[0]] && candidate != _topCandidates[0]) {
             if (candidate == _topCandidates[1]) {
                 (_topCandidates[1], _topCandidates[0]) = (_topCandidates[0], candidate);
@@ -85,9 +141,9 @@ contract Voting is Ownable {
                 (_topCandidates[2], _topCandidates[1], _topCandidates[0])
                     = (_topCandidates[1], _topCandidates[0], candidate);
             }
-        } else if (_votes > votes[_topCandidates[1]] && candidate != _topCandidates[1]) {
+        } else if (_votes > votes[_topCandidates[1]] && candidate != _topCandidates[1] && candidate != _topCandidates[0]) {
             (_topCandidates[2], _topCandidates[1]) = (_topCandidates[1], candidate);
-        } else if (_votes > votes[_topCandidates[2]] && candidate != _topCandidates[2]){
+        } else if (_votes > votes[_topCandidates[2]] && candidate != _topCandidates[2] && candidate != _topCandidates[1] && candidate != _topCandidates[0]){
             _topCandidates[2] = candidate;
         }
 
