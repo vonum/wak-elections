@@ -21,6 +21,10 @@ describe("VotingContract", () => {
   describe("Voting", () => {
     beforeEach(async () => {
       await this.votingContract.contract.methods
+        .setVotingStatus(true)
+        .send({from: owner, gas: 500000});
+
+      await this.votingContract.contract.methods
         .register()
         .send({from: owner, gas: 500000});
 
@@ -111,6 +115,19 @@ describe("VotingContract", () => {
         tx,
         "NewChallanger",
         {candidate: "1"}
+      );
+    });
+
+    it("Reverts when voting is paused", async () => {
+      await this.votingContract.contract.methods
+        .setVotingStatus(false)
+        .send({from: owner, gas: 500000});
+
+      await expectRevert(
+        this.votingContract.contract.methods
+          .vote(0, 1)
+          .send({from: owner, gas: 5000000}),
+        "Voting paused",
       );
     });
   });

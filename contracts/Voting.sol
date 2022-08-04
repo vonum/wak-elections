@@ -13,15 +13,19 @@ contract Voting is Ownable {
     mapping(address => bool) public voters;
     mapping(address => bool) public voted;
 
-    // initialize top candidates to something other than 0 or votes array to something other than 0
     uint8[3] public topCandidates;
 
     IERC20 public wknd;
+    bool public votingStatus;
 
-    event CandidatesSet(string[10] candidates);
     event NewChallanger(uint8 candidate);
     event VoterRegistered(address voter);
     event Voted(address voter, uint8 candidate, uint256 value);
+
+    modifier votingActive() {
+        require(votingStatus, "Voting paused");
+        _;
+    }
 
     modifier validCandidate(uint8 candidate) {
         require(candidate < 12 && candidate > 0, "Invalid candidate");
@@ -37,6 +41,11 @@ contract Voting is Ownable {
         wknd = _wknd;
     }
 
+    function setVotingStatus(bool status) external onlyOwner returns (bool) {
+        votingStatus = status;
+        return true;
+    }
+
     function register() external returns (bool) {
         require(!voters[msg.sender], "Already registered");
 
@@ -49,7 +58,10 @@ contract Voting is Ownable {
     }
 
     function vote(uint8 candidate, uint256 value)
-    external registeredVoter(msg.sender) validCandidate(candidate)
+    external
+    votingActive
+    registeredVoter(msg.sender)
+    validCandidate(candidate)
     returns (bool) {
         require(value > 0, "0 WKND tokens provided");
         require(!voted[msg.sender], "Already voted");
@@ -80,14 +92,6 @@ contract Voting is Ownable {
 
     function _updateTopCandidates(uint8 candidate, uint256 _votes) private {
         uint8[3] memory _topCandidates = topCandidates;
-
-        /*
-        if ((_votes == votes[_topCandidates[2]] && candidate == _topCandidates[2])
-            || (_votes == votes[_topCandidates[1]] && candidate == _topCandidates[1])
-            || (_votes == votes[_topCandidates[0]] && candidate == _topCandidates[0])) {
-            return;
-        }
-        */
 
         if (_votes > votes[_topCandidates[0]]) {
             // already 1st -> no change
@@ -126,25 +130,6 @@ contract Voting is Ownable {
             } else {
                 _topCandidates[2] = candidate;
             }
-        }
-
-        topCandidates = _topCandidates;
-    }
-
-    function _updateTopCandidates2(uint8 candidate, uint256 _votes) private {
-        uint8[3] memory _topCandidates = topCandidates;
-
-        if (_votes > votes[_topCandidates[0]] && candidate != _topCandidates[0]) {
-            if (candidate == _topCandidates[1]) {
-                (_topCandidates[1], _topCandidates[0]) = (_topCandidates[0], candidate);
-            } else {
-                (_topCandidates[2], _topCandidates[1], _topCandidates[0])
-                    = (_topCandidates[1], _topCandidates[0], candidate);
-            }
-        } else if (_votes > votes[_topCandidates[1]] && candidate != _topCandidates[1] && candidate != _topCandidates[0]) {
-            (_topCandidates[2], _topCandidates[1]) = (_topCandidates[1], candidate);
-        } else if (_votes > votes[_topCandidates[2]] && candidate != _topCandidates[2] && candidate != _topCandidates[1] && candidate != _topCandidates[0]){
-            _topCandidates[2] = candidate;
         }
 
         topCandidates = _topCandidates;

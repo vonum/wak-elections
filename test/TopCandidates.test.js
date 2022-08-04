@@ -11,10 +11,6 @@ const voteAndEmit = async (contract, sender, candidate) => {
     .vote(candidate, 1)
     .send({from: sender, gas: 500000});
 
-  const candidates = await this.votingContract.winningCandidates();
-  const c = candidates.map(c => c.toNumber());
-  console.log(`\n${c}`);
-
   expectEvent(
     tx,
     "NewChallanger",
@@ -26,10 +22,6 @@ const voteWithoutEmit = async (contract, sender, candidate) => {
   const tx = await contract.contract.methods
     .vote(candidate, 1)
     .send({from: sender, gas: 500000});
-
-  const candidates = await this.votingContract.winningCandidates();
-  const c = candidates.map(c => c.toNumber());
-  console.log(`\n${c}`);
 
   notEmitted(tx, "NewChallanger");
 }
@@ -51,6 +43,10 @@ describe("VotingContract", () => {
 
     await this.wkndContract.contract.methods
       .transfer(this.votingContract.address, initialSupply)
+      .send({from: owner, gas: 500000});
+
+    await this.votingContract.contract.methods
+      .setVotingStatus(true)
       .send({from: owner, gas: 500000});
 
     for (const acc of accounts) {
