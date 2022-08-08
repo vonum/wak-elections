@@ -4,6 +4,7 @@ const {TIMEFRAME} = process.env;
 
 async function main() {
   const initialSupply = 100000000;
+  const [deployer] = await ethers.getSigners();
 
   const wkndContractFactory = await ethers.getContractFactory("./contracts/WKND.sol:WKND");
   const wkndContract = await wkndContractFactory.deploy(initialSupply);
@@ -14,6 +15,12 @@ async function main() {
   const votingContract = await votingContractFactory.deploy(wkndContract.address);
   await votingContract.deployed();
   console.log("Voting contract deployed to address:", votingContract.address);
+
+  console.log("Sending some funds to voting contract");
+  await wkndContract.transfer(votingContract.address, 100);
+
+  console.log("Start voting");
+  await votingContract.setVotingStatus(true);
 }
 
 main()
