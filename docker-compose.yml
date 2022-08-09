@@ -1,0 +1,18 @@
+version: "3.9"
+services:
+  redis:
+    image: redis:5.0.3-alpine
+    container_name: elections-redis
+    restart: always
+    ports:
+      - 6378:6379
+
+  elections-service:
+    build: ./
+    image: elections-service
+    container_name: elections-service
+    command: node server.js
+    env_file:
+      - .env
+    ports:
+      - 3000:3000
