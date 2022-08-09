@@ -22,23 +22,23 @@ describe("VotingContract", () => {
   describe("Registering", () => {
     it("Succeeds when user tries to register the first time", async () => {
       const tx = await this.votingContract.contract.methods
-        .register()
+        .register(user)
         .send({from: owner, gas: 5000000});
 
       expect(tx.status).to.eq(true);
     });
 
     it("Transfers one WKND token to user", async () => {
-      const userBalance = await this.wkndContract.balanceOf(owner);
+      const userBalance = await this.wkndContract.balanceOf(user);
       const contractBalance = await this.wkndContract.balanceOf(
         this.votingContract.address
       );
 
       await this.votingContract.contract.methods
-        .register()
+        .register(user)
         .send({from: owner, gas: 5000000});
 
-      const newUserBalance = await this.wkndContract.balanceOf(owner);
+      const newUserBalance = await this.wkndContract.balanceOf(user);
       const newContractBalance = await this.wkndContract.balanceOf(
         this.votingContract.address
       );
@@ -52,26 +52,35 @@ describe("VotingContract", () => {
 
     it("Emits an event when user registers", async () => {
       const tx = await this.votingContract.contract.methods
-        .register()
+        .register(user)
         .send({from: owner, gas: 500000});
 
       expectEvent(
         tx,
         "VoterRegistered",
-        {voter: owner}
+        {voter: user}
       );
     });
 
     it("Reverts when user is already registered", async () => {
       await this.votingContract.contract.methods
-        .register()
+        .register(user)
         .send({from: owner, gas: 5000000});
 
       await expectRevert(
         this.votingContract.contract.methods
-          .register()
+          .register(user)
           .send({from: owner, gas: 5000000}),
         "Already registered",
+      );
+    });
+
+    it("Reverts when non owner tries to register a user", async () => {
+      await expectRevert(
+        this.votingContract.contract.methods
+          .register(user)
+          .send({from: user, gas: 5000000}),
+        "Ownable: caller is not the owner",
       );
     });
   });

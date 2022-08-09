@@ -6,10 +6,10 @@ const { notEmitted } = require("@openzeppelin/test-helpers").expectEvent;
 const WKND = contract.fromArtifact("WKND");
 const Voting = contract.fromArtifact("Voting");
 
-const voteAndEmit = async (contract, sender, candidate) => {
+const voteAndEmit = async (contract, owner, voter, candidate) => {
   const tx = await contract.contract.methods
-    .vote(candidate, 1)
-    .send({from: sender, gas: 500000});
+    .vote(voter, candidate, 1)
+    .send({from: owner, gas: 500000});
 
   expectEvent(
     tx,
@@ -18,10 +18,10 @@ const voteAndEmit = async (contract, sender, candidate) => {
   );
 }
 
-const voteWithoutEmit = async (contract, sender, candidate) => {
+const voteWithoutEmit = async (contract, owner, voter, candidate) => {
   const tx = await contract.contract.methods
-    .vote(candidate, 1)
-    .send({from: sender, gas: 500000});
+    .vote(voter, candidate, 1)
+    .send({from: owner, gas: 500000});
 
   notEmitted(tx, "NewChallanger");
 }
@@ -51,8 +51,8 @@ describe("VotingContract", () => {
 
     for (const acc of accounts) {
       await this.votingContract.contract.methods
-        .register()
-        .send({from: acc, gas: 500000});
+        .register(acc)
+        .send({from: owner, gas: 500000});
 
       await this.wkndContract.contract.methods
         .approve(this.votingContract.address, 1)
@@ -73,29 +73,29 @@ describe("VotingContract", () => {
        * 9 - 0
        * 10 - 0
        */
-      await voteAndEmit(this.votingContract, accounts[0], 1)
+      await voteAndEmit(this.votingContract, owner, accounts[0], 1)
       await winningCandidates(this.votingContract, 1, 0, 0);
 
-      await voteAndEmit(this.votingContract, accounts[1], 3)
+      await voteAndEmit(this.votingContract, owner, accounts[1], 3)
       await winningCandidates(this.votingContract, 1, 3, 0);
-      await voteWithoutEmit(this.votingContract, accounts[2], 3)
+      await voteWithoutEmit(this.votingContract, owner, accounts[2], 3)
       await winningCandidates(this.votingContract, 3, 1, 0);
-      await voteWithoutEmit(this.votingContract, accounts[3], 3)
+      await voteWithoutEmit(this.votingContract, owner, accounts[3], 3)
       await winningCandidates(this.votingContract, 3, 1, 0);
 
-      await voteAndEmit(this.votingContract, accounts[4], 4)
+      await voteAndEmit(this.votingContract, owner, accounts[4], 4)
       await winningCandidates(this.votingContract, 3, 1, 4);
 
-      await voteWithoutEmit(this.votingContract, accounts[5], 5)
+      await voteWithoutEmit(this.votingContract, owner, accounts[5], 5)
       await winningCandidates(this.votingContract, 3, 1, 4);
-      await voteAndEmit(this.votingContract, accounts[6], 5)
+      await voteAndEmit(this.votingContract, owner, accounts[6], 5)
       await winningCandidates(this.votingContract, 3, 5, 1);
-      await voteWithoutEmit(this.votingContract, accounts[7], 5)
+      await voteWithoutEmit(this.votingContract, owner, accounts[7], 5)
       await winningCandidates(this.votingContract, 3, 5, 1);
 
-      await voteWithoutEmit(this.votingContract, accounts[8], 7)
+      await voteWithoutEmit(this.votingContract, owner, accounts[8], 7)
       await winningCandidates(this.votingContract, 3, 5, 1);
-      await voteAndEmit(this.votingContract, accounts[9], 7)
+      await voteAndEmit(this.votingContract, owner, accounts[9], 7)
       await winningCandidates(this.votingContract, 3, 5, 7);
     });
   });

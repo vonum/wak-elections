@@ -25,7 +25,7 @@ describe("VotingContract", () => {
         .send({from: owner, gas: 500000});
 
       await this.votingContract.contract.methods
-        .register()
+        .register(owner)
         .send({from: owner, gas: 500000});
 
       await this.wkndContract.contract.methods
@@ -35,29 +35,38 @@ describe("VotingContract", () => {
 
     it("Succeeds when user is registered and hasn't voted yet", async () => {
       const tx = await this.votingContract.contract.methods
-        .vote(1, 1)
+        .vote(owner, 1, 1)
         .send({from: owner, gas: 500000});
 
       expect(tx.status).to.eq(true);
     });
 
+    it("Reverts when non owner tries to vote for candidates", async () => {
+      await expectRevert(
+        this.votingContract.contract.methods
+          .vote(user, 1, 1)
+          .send({from: user, gas: 5000000}),
+        "Ownable: caller is not the owner",
+      );
+    });
+
     it("Reverts when user is not registered", async () => {
       await expectRevert(
         this.votingContract.contract.methods
-          .vote(1, 1)
-          .send({from: user, gas: 5000000}),
+          .vote(user, 1, 1)
+          .send({from: owner, gas: 5000000}),
         "Voter not registered",
       );
     });
 
     it("Reverts when user has already voted", async () => {
       await this.votingContract.contract.methods
-        .vote(1, 1)
+        .vote(owner, 1, 1)
         .send({from: owner, gas: 500000});
 
       await expectRevert(
         this.votingContract.contract.methods
-          .vote(1, 1)
+          .vote(owner, 1, 1)
           .send({from: owner, gas: 5000000}),
         "Already voted",
       );
@@ -66,7 +75,7 @@ describe("VotingContract", () => {
     it("Reverts when user votes for an invalid candidate", async () => {
       await expectRevert(
         this.votingContract.contract.methods
-          .vote(0, 1)
+          .vote(owner, 0, 1)
           .send({from: owner, gas: 5000000}),
         "Invalid candidate",
       );
@@ -76,7 +85,7 @@ describe("VotingContract", () => {
       const initialVotes = await this.votingContract.votes(1);
 
       await this.votingContract.contract.methods
-        .vote(1, 1)
+        .vote(owner, 1, 1)
         .send({from: owner, gas: 500000});
 
       const votes = await this.votingContract.votes(1);
@@ -87,7 +96,7 @@ describe("VotingContract", () => {
 
     it("Sets the user status to voted", async () => {
       await this.votingContract.contract.methods
-        .vote(1, 1)
+        .vote(owner, 1, 1)
         .send({from: owner, gas: 500000});
 
       const voted = await this.votingContract.voted(owner);
@@ -96,7 +105,7 @@ describe("VotingContract", () => {
 
     it("Emits an event when user votes", async () => {
       const tx = await this.votingContract.contract.methods
-        .vote(1, 1)
+        .vote(owner, 1, 1)
         .send({from: owner, gas: 500000});
 
       expectEvent(
@@ -108,7 +117,7 @@ describe("VotingContract", () => {
 
     it("Emits an event when the top 3 candidates change", async () => {
       const tx = await this.votingContract.contract.methods
-        .vote(1, 1)
+        .vote(owner, 1, 1)
         .send({from: owner, gas: 500000});
 
       expectEvent(
@@ -125,7 +134,7 @@ describe("VotingContract", () => {
 
       await expectRevert(
         this.votingContract.contract.methods
-          .vote(0, 1)
+          .vote(owner, 0, 1)
           .send({from: owner, gas: 5000000}),
         "Voting paused",
       );
@@ -139,7 +148,7 @@ describe("VotingContract", () => {
         .send({from: owner, gas: 500000});
 
       await this.votingContract.contract.methods
-        .register()
+        .register(owner)
         .send({from: owner, gas: 500000});
 
       await this.wkndContract.contract.methods
@@ -147,20 +156,20 @@ describe("VotingContract", () => {
         .send({from: owner, gas: 500000});
 
       await this.votingContract.contract.methods
-        .register()
-        .send({from: user, gas: 500000});
+        .register(user)
+        .send({from: owner, gas: 500000});
 
       await this.wkndContract.contract.methods
         .approve(this.votingContract.address, 1)
         .send({from: user, gas: 500000});
 
       await this.votingContract.contract.methods
-        .vote(3, 1)
+        .vote(owner, 3, 1)
         .send({from: owner, gas: 500000});
 
       await this.votingContract.contract.methods
-        .vote(7, 1)
-        .send({from: user, gas: 500000});
+        .vote(user, 7, 1)
+        .send({from: owner, gas: 500000});
 
       const candidateVotes = await this.votingContract.candidateVotes();
       const votes = candidateVotes.map(v => v.toNumber());

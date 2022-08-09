@@ -46,34 +46,35 @@ contract Voting is Ownable {
         return true;
     }
 
-    function register() external returns (bool) {
-        require(!voters[msg.sender], "Already registered");
+    function register(address voter) external onlyOwner returns (bool) {
+        require(!voters[voter], "Already registered");
 
-        voters[msg.sender] = true;
-        wknd.transfer(msg.sender, 1);
+        voters[voter] = true;
+        wknd.transfer(voter, 1);
 
-        emit VoterRegistered(msg.sender);
+        emit VoterRegistered(voter);
 
         return true;
     }
 
-    function vote(uint8 candidate, uint256 value)
+    function vote(address voter, uint8 candidate, uint256 value)
     external
     votingActive
-    registeredVoter(msg.sender)
+    onlyOwner
+    registeredVoter(voter)
     validCandidate(candidate)
     returns (bool) {
         require(value > 0, "0 WKND tokens provided");
-        require(!voted[msg.sender], "Already voted");
+        require(!voted[voter], "Already voted");
 
         bool wasTopCandidate = _isTopCondidate(candidate);
 
-        wknd.transferFrom(msg.sender, address(this), value);
+        wknd.transferFrom(voter, address(this), value);
 
         votes[candidate] += value;
-        voted[msg.sender] = true;
+        voted[voter] = true;
 
-        emit Voted(msg.sender, candidate, value);
+        emit Voted(voter, candidate, value);
 
         _updateTopCandidates(candidate, votes[candidate]);
 

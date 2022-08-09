@@ -16,7 +16,9 @@ describe("VotingContract", () => {
 
   it("Sets contract params properly", async () => {
     const wkndAddress = await this.votingContract.wknd();
+    const votingStatus = await this.votingContract.votingStatus();
 
-    expect(wkndAddress).to.equal(this.wkndContract.address);
+    expect(wkndAddress).to.eq(this.wkndContract.address);
+    expect(votingStatus).to.eq(false);
   });
 });
