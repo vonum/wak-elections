@@ -67,6 +67,9 @@ contract Voting is Ownable {
         require(value > 0, "0 WKND tokens provided");
         require(!voted[voter], "Already voted");
 
+        uint256 allowance = wknd.allowance(voter, address(this));
+        require(allowance >= value, "Insufficient tokens for voting");
+
         bool wasTopCandidate = _isTopCondidate(candidate);
 
         wknd.transferFrom(voter, address(this), value);
