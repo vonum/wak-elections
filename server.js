@@ -117,6 +117,7 @@ app.post("/vote", asyncHandler(async (req, res, next) => {
     res.send(200);
   } catch (e) {
     console.log("Voting transaction failed")
+    console.log(`${voter} - ${candidate} - ${value}`)
     let reason;
     try {
       const result = await votingContract.methods

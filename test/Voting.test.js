@@ -72,6 +72,15 @@ describe("VotingContract", () => {
       );
     });
 
+    it("Reverts when user has not approved spending of voting tokens", async () => {
+      await expectRevert(
+        this.votingContract.contract.methods
+          .vote(owner, 1, 2)
+          .send({from: owner, gas: 5000000}),
+        "Insufficient tokens for voting",
+      );
+    });
+
     it("Reverts when user votes for an invalid candidate", async () => {
       await expectRevert(
         this.votingContract.contract.methods
