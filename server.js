@@ -14,6 +14,7 @@ const CONTRACT_ADDRESS = process.env.VOTING_CONTRACT_ADDRESS;
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 const web3 = createAlchemyWeb3(process.env.API_URL);
 
+const REDIS_URL = process.env.REDIS_URL;
 const REDIS_LOCAL_URL = process.env.REDIS_LOCAL_URL;
 const REDIS_KEY = process.env.REDIS_KEY;
 const REDIS_STORE = process.env.REDIS_STORE;
@@ -48,22 +49,35 @@ const fetchCandidates = async () => {
 
 app.get("/candidates", asyncHandler(async (req, res, next) => {
   const candidates = await fetchCandidates();
-  const data = await votingContract.methods.candidateVotes().call();
+  const votes = await votingContract.methods.candidateVotes().call();
   candidates.forEach((c, id) => {
-    c.votes = parseInt(data[id]);
+    c.votes = parseInt(votes[id]);
   });
   res.send(candidates);
 }));
 
 app.post("/register", asyncHandler(async (req, res, next) => {
   const voter = web3.utils.toChecksumAddress(req.body.voter);
-  console.log(voter);
+  console.log("Registering voter");
 
-  const success = await votingContract.methods
-    .register(voter)
-    .send({from: admin.address, gas: 5000000});
-
-  res.send(200);
+  try {
+    const success = await votingContract.methods
+      .register(voter)
+      .send({from: admin.address, gas: 5000000});
+    console.log(`Registered voter: ${voter}`);
+    res.send(200);
+  } catch (e) {
+    try {
+      console.log(`Failed to register voter: ${voter}`);
+      await votingContract.methods
+        .register(voter)
+        .call({from: admin.address, gas: 5000000});
+    } catch (e) {
+      const reason = web3.utils.toAscii(e.data);
+      console.log(e.message);
+      res.status(400).send(e.message);
+    }
+  }
 }));
 
 app.post("/vote", asyncHandler(async (req, res, next) => {
@@ -72,15 +86,29 @@ app.post("/vote", asyncHandler(async (req, res, next) => {
   const value = req.body.value;
 
   console.log("Voting:")
-  console.log(`${voter} - ${candidate} - ${value}`)
 
   try {
     // throw "Error";
     const success = await votingContract.methods
       .vote(voter, candidate, value)
       .send({from: admin.address, gas: 5000000});
+    console.log(`Successfully voted`);
+    console.log(`${voter} - ${candidate} - ${value}`)
+    res.send(200);
   } catch (e) {
     console.log("Voting transaction failed")
+    let reason;
+    try {
+      const result = await votingContract.methods
+        .vote(voter, candidate, value)
+        .call({from: admin.address, gas: 5000000});
+    } catch (e) {
+      // reason = web3.utils.toAscii(e.data);
+      // console.log(reason);
+      console.log(e.message);
+      res.status(400).send(e.message);
+    }
+
     let votes = await redisClient.get("votes");
     if (!votes) {
       votes = [];
@@ -88,18 +116,20 @@ app.post("/vote", asyncHandler(async (req, res, next) => {
     votes.push({voter, candidate, value});
     redisClient.save("votes", votes);
     console.log("Saved vote in redis");
+    console.log(`${voter} - ${candidate} - ${value}`)
+    res.send(400);
   }
-
-  res.send(200);
 }));
 
 app.get("/winning_candidates", asyncHandler(async (req, res, next) => {
   const data = await votingContract.methods.winningCandidates().call();
   const candidates = await fetchCandidates();
+  console.log(data);
 
   const winningCandidates = data.map(id => {
     return id ? candidates[parseInt(id) - 1] : null;
   });
+  console.log(winningCandidates);
 
   res.send(winningCandidates);
 }));
