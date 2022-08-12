@@ -57,10 +57,14 @@ app.get("/candidates", asyncHandler(async (req, res, next) => {
 }));
 
 app.post("/register", asyncHandler(async (req, res, next) => {
-  const voter = web3.utils.toChecksumAddress(req.body.voter);
-  console.log("Registering voter");
-
   try {
+    if (!web3.utils.isAddress(req.body.voter)) {
+      res.status(400).send("Not a valid address");
+    }
+
+    const voter = web3.utils.toChecksumAddress(req.body.voter);
+    console.log("Registering voter");
+
     const success = await votingContract.methods
       .register(voter)
       .send({from: admin.address, gas: 5000000});
@@ -88,6 +92,22 @@ app.post("/vote", asyncHandler(async (req, res, next) => {
   console.log("Voting:")
 
   try {
+    try {
+      await web3.eth.net.isListening();
+    } catch (e) {
+      console.log("Connection to node not available");
+      let votes = await redisClient.get("votes");
+      if (!votes) {
+        votes = [];
+      }
+      votes.push({voter, candidate, value});
+      redisClient.save("votes", votes);
+      console.log("Saved vote in redis");
+      console.log(`${voter} - ${candidate} - ${value}`)
+
+      res.status(400).send("Connection to node unavailable");
+    }
+
     // throw "Error";
     const success = await votingContract.methods
       .vote(voter, candidate, value)
@@ -109,14 +129,6 @@ app.post("/vote", asyncHandler(async (req, res, next) => {
       res.status(400).send(e.message);
     }
 
-    let votes = await redisClient.get("votes");
-    if (!votes) {
-      votes = [];
-    }
-    votes.push({voter, candidate, value});
-    redisClient.save("votes", votes);
-    console.log("Saved vote in redis");
-    console.log(`${voter} - ${candidate} - ${value}`)
     res.send(400);
   }
 }));
