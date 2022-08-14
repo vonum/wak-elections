@@ -38,6 +38,9 @@ const votingContract = new web3.eth.Contract(contract.abi, CONTRACT_ADDRESS);
       console.log("Successfully voted");
     } catch (e) {
       console.log("Failed to cast vote");
+      console.log(vote);
     }
   }
+
+  await redisClient.delete("votes");
 })();
