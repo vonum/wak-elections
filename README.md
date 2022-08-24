@@ -27,9 +27,6 @@ Consists of:
 
 ## How to run
 0. Set .env based on .env.example
-    * `API_URL`
-    * `PUBLIC_KEY`
-    * `PRIVATE_KEY`
 1. Deploy contracts -> `npx hardhat run scripts/deploy.js --network rinkeby`
 2. Copy contract addresses to:
     * `.env`
