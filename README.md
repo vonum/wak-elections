@@ -24,3 +24,16 @@ Consists of:
 
 ## Frontend app
 * `yarn start`
+
+## How to run
+0. Set .env based on .env.example
+    * `API_URL`
+    * `PUBLIC_KEY`
+    * `PRIVATE_KEY`
+1. Deploy contracts -> `npx hardhat run scripts/deploy.js --network rinkeby`
+2. Copy contract addresses to:
+    * `.env`
+    * `voting-app/.env.development` (or production)
+3. Start containers -> `docker-compose up --build`
+
+The service is running on port 3000 and the browser app is running on port 3001.
