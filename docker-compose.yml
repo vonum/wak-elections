@@ -16,3 +16,11 @@ services:
       - .env
     ports:
       - 3000:3000
+
+  voting-app:
+    build: voting-app
+    image: voting-app
+    container_name: voting-app
+    command: npm run start
+    ports:
+      - 3001:3001
